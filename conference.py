@@ -361,8 +361,10 @@ class ConferenceApi(remote.Service):
         # value = "London"
         # f = ndb.query.FilterNode(field, operator, value)
         # q = q.filter(f)
-        q = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
-        for sess in q:
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        user_id = conf.organizerUserId
+        sessions = Session.query(ancestor=ndb.Key(Conference, user_id))
+        for sess in sessions:
             print "in getConferenceSessionsByType for loop un-filtered"
             print sess.name
             print sess.speaker
@@ -375,11 +377,12 @@ class ConferenceApi(remote.Service):
             print sess.name
             print sess.speaker
 
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
-        return SessionForms(items=[self._copySessionToForm(sess, names[sess.name]) for sess in\
-            sessions]
+
+        #sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
+        return SessionForms(
+            items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
         )
+
 
 # - - - Session endpoints - - - - - - - - - - - - - - - - - -
 
