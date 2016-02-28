@@ -446,14 +446,6 @@ class ConferenceApi(remote.Service):
         print conf
         print "sessions="
         print sessions
-        for sess in sessions:
-            print sess.name
-            print sess.speaker
-            print sess.typeOfSession
-            if sess.sessDate:
-                print sess.sessDate
-            if sess.startTime:
-                print sess.startTime
 
         return SessionForms(
             items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
@@ -467,16 +459,21 @@ class ConferenceApi(remote.Service):
         print "in getConferenceSessionsByType"
         sf = SessionForm()
         # Node(field, operator, value)
-        # q = q.filter(f)
+        q = Session.query()
         conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        user_id = conf.organizerUserId
-        sessions = Session.query(ancestor=ndb.Key(Conference, user_id))
-        typeOfSession = request.typeOfSession
-        sessions = Session.query(Session.typeOfSession == request.typeOfSession)
-        print "typeOfSession ="
-        print typeOfSession
+        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        # user_id = conf.organizerUserId
+        sessions = Session.query(ancestor=c_key)
+        print "after session.query(ancestor=c_key"
+        for s in sessions:
+            print s.name
+            print s.typeOfSession
+
+        sessions = sessions.filter(Session.typeOfSession == request.typeOfSession)
+        # typeOfSession = request.typeOfSession
+        # sessions = Session.query(Session.typeOfSession == request.typeOfSession)
         for sess in sessions:
-            print "in getConferenceSessionsByType for loop filtered"
+            print "after filtered"
             print sess.name
             print sess.typeOfSession
             print sess.speaker
