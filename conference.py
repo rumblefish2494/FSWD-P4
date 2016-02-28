@@ -114,6 +114,10 @@ SESS_POST_REQUEST = endpoints.ResourceContainer(
     websafeConferenceKey=messages.StringField(1),
 )
 
+SESS_SPEAKER_GET_REQUEST = endpoints.ResourceContainer(
+    speaker=messages.StringField(1),
+    )
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -472,18 +476,36 @@ class ConferenceApi(remote.Service):
         sessions = sessions.filter(Session.typeOfSession == request.typeOfSession)
         # typeOfSession = request.typeOfSession
         # sessions = Session.query(Session.typeOfSession == request.typeOfSession)
-        for sess in sessions:
-            print "after filtered"
-            print sess.name
-            print sess.typeOfSession
-            print sess.speaker
+
 
 
         #sessions = Session.query(ancestor=ndb.Key(Conference, request.websafeConferenceKey))
         return SessionForms(
             items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
         )
+    @endpoints.method(SESS_SPEAKER_GET_REQUEST, SessionForms,
+        path='session_by_speaker',
+        http_method='POST', name='getSessionsBySpeaker')
+    def getSessionsBySpeaker(self, request):
+        """return all sessions by speaker for conferneces created by user"""
+        q = Session.query()
+        print "before filtered"
+        for sess in q:
 
+            print sess.name
+            print sess.typeOfSession
+            print sess.speaker
+        q = q.filter(Session.speaker == request.speaker)
+        print "after filtered"
+        for sess in q:
+
+            print sess.name
+            print sess.typeOfSession
+            print sess.speaker
+
+        return SessionForms(
+            items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in q]
+        )
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 
