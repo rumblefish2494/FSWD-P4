@@ -105,7 +105,6 @@ SESS_GET_REQUEST = endpoints.ResourceContainer(
 )
 
 SESS_TYPE_GET_REQUEST = endpoints.ResourceContainer(
-    ConferenceForm,
     websafeConferenceKey=messages.StringField(1),
     typeOfSession=messages.StringField(2),
 )
@@ -455,6 +454,7 @@ class ConferenceApi(remote.Service):
         path='session_type/{websafeConferenceKey}',
         http_method='POST', name='getConferenceSessionsByType')
     def getConferenceSessionsByType(self, request):
+        """return requested sessions by type for given Conference(websafeConferenceKey)"""
         # get Sessions fildter by type of session
         print "in getConferenceSessionsByType"
         sf = SessionForm()
