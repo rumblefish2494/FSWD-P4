@@ -68,7 +68,7 @@ SESS_DEFAULTS = {
     "speaker": "To be announced",
     "duration": 0,
     "typeOfSession": "Not defined",
-    "sessDate:": "2099-12-31",
+    "sessDate": "2099-12-31",
     "startTime": "23:59",
 }
 
@@ -196,59 +196,6 @@ class ConferenceApi(remote.Service):
             url='/tasks/send_confirmation_email'
         )
         return request
-
-    def _createSessionObject(self, request):
-        """Create Session object, return SessionForm/request."""
-        user = endpoints.get_current_user()
-        if not user:
-            raise endpoints.UnauthorizedException('Authorization required')
-        user_id = getUserId(user)
-
-        if not request.name:
-            raise endpoints.BadRequestException("Session 'name' field requered")
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
-        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
-        print "c_key using urlsafe:"
-        print c_key
-
-        # copy ConferenceForm/ProtoRPC Message into dict
-        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
-        del data['websafeConferenceKey']
-        del data['websafeKey']
-
-        # add default values for those missing (both data model & outbound Message)
-        for df in SESS_DEFAULTS:
-            if data[df] in (None, []):
-                data[df] = SESS_DEFAULTS[df]
-                setattr(request, df, SESS_DEFAULTS[df])
-        # assign data with to form to pass back
-        sf = SessionForm(**data)
-
-        # convert dates from strings to Date objects; set month based on start_date
-        if data['sessDate']:
-            print "in if data[sessDate]"
-            print "data[sessDate]="
-            print data['sessDate']
-            data['sessDate'] = datetime.strptime(data['sessDate'][:10], "%Y-%m-%d").date()
-            print "after datetime.strptime(data[sessDate] yadayada"
-            print "data['sessDate']="
-            print data['sessDate']
-
-        if data['startTime']:
-            data['startTime'] = datetime.strptime(data['startTime'], "%H:%M").time()
-
-        if conf.organizerUserId != user_id:
-            raise endpoints.UnauthorizedException("Only the conference creator can add sessions.")
-
-        s_id = Session.allocate_ids(size=1, parent=c_key)[0]
-        s_key = ndb.Key(Session, s_id, parent=c_key)
-        data['key'] = s_key
-
-        # create Session,
-        Session(**data).put()
-
-        # return (modified) SessionForm
-        return sf
 
     @ndb.transactional()
     def _updateConferenceObject(self, request):
@@ -410,12 +357,53 @@ class ConferenceApi(remote.Service):
                 conferences]
         )
 
-
-
-
 # - - - Session endpoints - - - - - - - - - - - - - - - - - -
 
 
+    def _createSessionObject(self, request):
+        """Create Session object, return SessionForm/request."""
+        user = endpoints.get_current_user()
+        if not user:
+            raise endpoints.UnauthorizedException('Authorization required')
+        user_id = getUserId(user)
+
+        if not request.name:
+            raise endpoints.BadRequestException("Session 'name' field requered")
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+
+        # copy ConferenceForm/ProtoRPC Message into dict
+        data = {field.name: getattr(request, field.name) for field in request.all_fields()}
+        del data['websafeConferenceKey']
+        del data['websafeKey']
+
+        # add default values for those missing (both data model & outbound Message)
+        for df in SESS_DEFAULTS:
+            if data[df] in (None, []):
+                data[df] = SESS_DEFAULTS[df]
+                setattr(request, df, SESS_DEFAULTS[df])
+        # assign data with to form to pass back
+        sf = SessionForm(**data)
+
+        # convert dates from strings to Date objects; set month based on start_date
+        if data['sessDate']:
+            data['sessDate'] = datetime.strptime(data['sessDate'][:10], "%Y-%m-%d").date()
+
+        if data['startTime']:
+            data['startTime'] = datetime.strptime(data['startTime'], "%H:%M").time()
+
+        if conf.organizerUserId != user_id:
+            raise endpoints.UnauthorizedException("Only the conference creator can add sessions.")
+
+        s_id = Session.allocate_ids(size=1, parent=c_key)[0]
+        s_key = ndb.Key(Session, s_id, parent=c_key)
+        data['key'] = s_key
+
+        # create Session,
+        Session(**data).put()
+
+        # return (modified) SessionForm
+        return sf
 
     def _copySessionToForm(self, sess, name):
         """Copy relevant fileds from Session to SessionForm."""
@@ -440,8 +428,6 @@ class ConferenceApi(remote.Service):
             http_method='POST', name='createSession')
     def createSession(self, request):
         """Create new Session."""
-        print "requst ="
-        print request
         return self._createSessionObject(request)
 
     @endpoints.method(SESS_GET_REQUEST, SessionForms,
