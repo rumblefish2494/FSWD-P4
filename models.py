@@ -107,13 +107,13 @@ class SessionForms(messages.Message):
     """SessionForms -- multiple Session outbound form message"""
     items = messages.MessageField(SessionForm, 1, repeated=True)
 
-class SessionQuerySpeakerForm(messages.Message):
-    """SessionQuerySpeakerForm -- Session query inbound form message"""
-    speaker = messages.StringField(1)
+#class SessionQuerySpeakerForm(messages.Message):
+#    """SessionQuerySpeakerForm -- Session query inbound form message"""
+#    speaker = messages.StringField(1)
 
-class SessionQuerySpeakerForms(messages.Message):
-    """SessionQuerySpeakerForm -- muldiple SessionQuerySpeakerForm inbound form message"""
-    filters = messages.MessageField(SessionQuerySpeakerForm, 1, repeated=True)
+#class SessionQuerySpeakerForms(messages.Message):
+#    """SessionQuerySpeakerForm -- muldiple SessionQuerySpeakerForm inbound form message"""
+#    filters = messages.MessageField(SessionQuerySpeakerForm, 1, repeated=True)
 
 class TeeShirtSize(messages.Enum):
     """TeeShirtSize -- t-shirt size enumeration value"""
@@ -142,4 +142,5 @@ class ConferenceQueryForm(messages.Message):
 class ConferenceQueryForms(messages.Message):
     """ConferenceQueryForms -- multiple ConferenceQueryForm inbound form message"""
     filters = messages.MessageField(ConferenceQueryForm, 1, repeated=True)
+
 
