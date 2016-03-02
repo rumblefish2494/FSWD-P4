@@ -492,14 +492,21 @@ class ConferenceApi(remote.Service):
         path='session_name',
         http_method='POST', name='getSessionsByName')
     def getSessionsByName(self, request):
-        """return requested sessions by name"""
 
-        #c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
-        # get all Sessions for provided conference
         sessions = Session.query(Session.name == request.name)
-        # filter sessions for type submitted in request container
-        #sessions = sessions.filter(Session.sessDate == datetime.strptime(request.sessDate[:10], "%Y-%m-%d").date())
-        #sessions = sessions.order(Session.startTime)
+        return SessionForms(
+            items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
+        )
+
+    @endpoints.method(message_types.VoidMessage, SessionForms,
+        path='sesion_problem_query',
+        http_method='POST', name='getSessionsBeforeSevenNonWorkshop')
+    def getSessionsBeforeSevenNonWorkshop(self, request):
+        q = Session.query(Session.typeOfSession != 'workshop')
+        sessions = []
+        for sess in q:
+            if sess.startTime < datetime.strptime("19:00", "%H:%M").time():
+                sessions.append(sess)
 
         return SessionForms(
             items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
