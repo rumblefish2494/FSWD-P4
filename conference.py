@@ -109,6 +109,10 @@ SESS_DATE_GET_REQUEST = endpoints.ResourceContainer(
     sessDate=messages.StringField(2),
 )
 
+SESS_NAME_GET_REQUEST = endpoints.ResourceContainer(
+    name=messages.StringField(1)
+)
+
 SESS_POST_REQUEST = endpoints.ResourceContainer(
     SessionForm,
     websafeConferenceKey=messages.StringField(1),
@@ -483,6 +487,24 @@ class ConferenceApi(remote.Service):
             items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
         )
 
+        # get conference sessions by name
+    @endpoints.method(SESS_NAME_GET_REQUEST, SessionForms,
+        path='session_name',
+        http_method='POST', name='getSessionsByName')
+    def getSessionsByName(self, request):
+        """return requested sessions by name"""
+
+        #c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        # get all Sessions for provided conference
+        sessions = Session.query(Session.name == request.name)
+        # filter sessions for type submitted in request container
+        #sessions = sessions.filter(Session.sessDate == datetime.strptime(request.sessDate[:10], "%Y-%m-%d").date())
+        #sessions = sessions.order(Session.startTime)
+
+        return SessionForms(
+            items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in sessions]
+        )
+
     @endpoints.method(SESS_SPEAKER_GET_REQUEST, SessionForms,
         path='session_by_speaker',
         http_method='POST', name='getSessionsBySpeaker')
@@ -495,6 +517,7 @@ class ConferenceApi(remote.Service):
         return SessionForms(
             items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in q]
         )
+
 
 # - - - Profile objects - - - - - - - - - - - - - - - - - - -
 
