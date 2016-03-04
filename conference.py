@@ -377,8 +377,13 @@ class ConferenceApi(remote.Service):
 
         if not request.name:
             raise endpoints.BadRequestException("Session 'name' field required (createSessionObject)")
-        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        wsck = request.websafeConferenceKey
+        conf = ndb.Key(urlsafe=wsck).get()
         c_key = ndb.Key(urlsafe=request.websafeConferenceKey)
+        print 'wsck='
+        print request.websafeConferenceKey
+        print "c_key ="
+        print c_key
 
         # copy ConferenceForm/ProtoRPC Message into dict
         data = {field.name: getattr(request, field.name) for field in request.all_fields()}
@@ -409,6 +414,21 @@ class ConferenceApi(remote.Service):
 
         # create Session,
         Session(**data).put()
+        # use queue to determine featured speaker
+        sessions = Session.query(ancestor=c_key)
+        print "in create session"
+        sesss = ["a","b","c"]
+        #for s in sessions:
+        #   sesss.append(s.speaker)
+            #print s.name
+            #print s.speaker
+
+        print "before taskQueue. wsck="
+        print wsck
+        taskqueue.add(params={'speaker': data['speaker'],
+            'wsck': wsck},
+            url='/tasks/determine_feature_speaker',method='GET'
+        )
         # return (modified) SessionForm
         return sf
 
@@ -502,6 +522,7 @@ class ConferenceApi(remote.Service):
         path='sesion_problem_query',
         http_method='POST', name='getSessionsBeforeSevenNonWorkshop')
     def getSessionsBeforeSevenNonWorkshop(self, request):
+        """query for sessions that aren't workshops and start before 7:00pm"""
         q = Session.query(Session.typeOfSession != 'workshop')
         sessions = []
         for sess in q:
@@ -628,6 +649,48 @@ class ConferenceApi(remote.Service):
 
         return announcement
 
+    @staticmethod
+    def _setFeaturedSpeaker(speaker, wsck):
+        """determine if speaker should be featured speaker"""
+        print "in set featured speaker method"
+        #c_key = ndb.Key(c_key)
+        print "wsck="
+        print wsck
+        c_key = ndb.Key(urlsafe=wsck)
+
+        sessions = Session.query(ancestor=c_key)
+
+
+        names = 0
+        speaker_count = 0
+        for s in sessions:
+            if s.speaker == speaker:
+                speaker_count +=1
+            names +=1
+
+        print "speaker %s" % speaker
+        print speaker_count
+        print "total_names= %s" % names
+        print "speaker_count > 1"
+
+        if speaker_count > 1:
+            print"in if statement"
+            print"featured speaker is:%s" % speaker
+        elif speaker_count == 1 and names == 1:
+            print "featured speaker is %s because there is only 1 speaker" % speaker
+        else:
+           print "why am I here"
+
+        #for s in sessions:
+        #    if sess.speaker == speaker:
+        #        speaker_count +=1
+
+        #    names +=1
+       #print "total names = %s" % names
+        #print "speaker count = %s" % speaker_count
+
+        return ""
+
 
     @endpoints.method(message_types.VoidMessage, StringMessage,
             path='conference/announcement/get',
@@ -740,6 +803,7 @@ class ConferenceApi(remote.Service):
         # check if sess exists given websafeSessKey
         # get session; check that it exists
         wssk = request.websafeSessionKey
+
         sess = ndb.Key(urlsafe=wssk).get()
         if not sess:
             raise endpoints.NotFoundException(
