@@ -35,6 +35,7 @@ from models import ConferenceForm
 from models import ConferenceForms
 from models import ConferenceQueryForm
 from models import ConferenceQueryForms
+from models import SpeakerForm
 #from models import SessionQuerySpeakerForm
 #from models import SessionQuerySpeakerForms
 from models import Session
@@ -61,6 +62,7 @@ DEFAULTS = {
     "maxAttendees": 0,
     "seatsAvailable": 0,
     "topics": [ "Default", "Topic" ],
+    "featuredSpeaker": "To be announced",
 }
 
 SESS_DEFAULTS = {
@@ -365,6 +367,28 @@ class ConferenceApi(remote.Service):
                 conferences]
         )
 
+    @endpoints.method(CONF_GET_REQUEST, SpeakerForm,
+            path='conferenceSpeaker/{websafeConferenceKey}',
+            http_method='GET', name='getFeaturedSpeaker')
+    def getFeaturedSpeaker(self, request):
+        """Return conference name and Featured speaker (by websafeConferenceKey)."""
+        # get Conference object from request; bail if not found
+        sf = SpeakerForm()
+        conf = ndb.Key(urlsafe=request.websafeConferenceKey).get()
+        if not conf:
+            raise endpoints.NotFoundException(
+                'No conference found with key: %s' % request.websafeConferenceKey)
+        #prof = conf.key.parent().get()
+        for field in sf.all_fields():
+            if hasattr(conf, field.name):
+                setattr(sf, field.name, getattr(conf, field.name))
+
+        sf.check_initialized()
+
+        return sf
+        # return ConferenceForm
+
+
 # - - - Session endpoints - - - - - - - - - - - - - - - - - -
 
 
@@ -416,15 +440,7 @@ class ConferenceApi(remote.Service):
         Session(**data).put()
         # use queue to determine featured speaker
         sessions = Session.query(ancestor=c_key)
-        print "in create session"
-        sesss = ["a","b","c"]
-        #for s in sessions:
-        #   sesss.append(s.speaker)
-            #print s.name
-            #print s.speaker
 
-        print "before taskQueue. wsck="
-        print wsck
         taskqueue.add(params={'speaker': data['speaker'],
             'wsck': wsck},
             url='/tasks/determine_feature_speaker',method='GET'
@@ -659,7 +675,9 @@ class ConferenceApi(remote.Service):
         c_key = ndb.Key(urlsafe=wsck)
 
         sessions = Session.query(ancestor=c_key)
-
+        conf = c_key.get()
+        print "conference ="
+        print conf
 
         names = 0
         speaker_count = 0
@@ -676,18 +694,12 @@ class ConferenceApi(remote.Service):
         if speaker_count > 1:
             print"in if statement"
             print"featured speaker is:%s" % speaker
+            conf.featuredSpeaker = speaker
+            conf.put()
         elif speaker_count == 1 and names == 1:
             print "featured speaker is %s because there is only 1 speaker" % speaker
-        else:
-           print "why am I here"
-
-        #for s in sessions:
-        #    if sess.speaker == speaker:
-        #        speaker_count +=1
-
-        #    names +=1
-       #print "total names = %s" % names
-        #print "speaker count = %s" % speaker_count
+            conf.featuredSpeaker = speaker
+            conf.put()
 
         return ""
 
