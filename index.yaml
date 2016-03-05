@@ -95,7 +95,7 @@ indexes:
   properties:
   - name: topics
   - name: name
-
+#index for session query
 - kind: Session
   ancestor: yes
   properties:
