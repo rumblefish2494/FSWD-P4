@@ -582,10 +582,9 @@ class ConferenceApi(remote.Service):
         path='session_by_speaker',
         http_method='POST', name='getSessionsBySpeaker')
     def getSessionsBySpeaker(self, request):
-        """return all sessions by speaker for conferneces created by user"""
+        """return all sessions by speaker for conferneces"""
         q = Session.query()
         q = q.filter(Session.speaker == request.speaker)
-        print "after filtered"
 
         return SessionForms(
             items=[self._copySessionToForm(sess, getattr(sess, 'name')) for sess in q]
